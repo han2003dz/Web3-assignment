@@ -1,0 +1,27 @@
+services:
+  client:
+    container_name: client
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - server
+    networks:
+      - web3
+  server:
+    container_name: server
+    env_file:
+      - path: ./Backend/.env
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    ports:
+      - "3000"
+    networks:
+      - web3
+networks:
+  web3:
+    driver: bridge

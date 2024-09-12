@@ -1,0 +1,7 @@
+build/
+node_modules/
+tests/
+.editorconfig
+.gitignore
+.env
+.env.*
