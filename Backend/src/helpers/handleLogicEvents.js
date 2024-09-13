@@ -1,3 +1,6 @@
+const { Web3 } = require("web3");
+const providerURL = process.env.NETWORK_RPC;
+const web3 = new Web3(providerURL);
 const { transactionService } = require("../services");
 
 const handleLogicEvents = async (event, blockTimeStamp, synchronize) => {
@@ -52,6 +55,14 @@ const handleDepositEvent = async (
 ) => {
   const { user, amount, depositTime } = returnValues;
   const date = new Date(Number(depositTime) * 1000);
+
+  const receipt = await web3.eth.getTransactionReceipt(event.transactionHash);
+  const gasUsed = receipt.gasUsed;
+  console.log("gasUsed", gasUsed);
+
+  const tx = await web3.eth.getTransaction(event.transactionHash);
+  const gasPrice = BigInt(tx.gasPrice);
+
   await transactionService.createTransaction({
     contractAddress: event.address,
     transactionHash: event.transactionHash,
@@ -60,6 +71,8 @@ const handleDepositEvent = async (
     eventName: event.event,
     amount: amount.toString(),
     date,
+    gasPrice: gasPrice.toString(),
+    gasUsed: gasUsed.toString(),
     spender: user,
     blockTimeStamp: blockTimeStamp.toString(),
     synchronize: synchronize.id,
@@ -74,6 +87,13 @@ const handleWithdrawEvent = async (
 ) => {
   const { user, amount, reward, timestamp } = returnValues;
   const withdrawDate = new Date(Number(timestamp) * 1000);
+
+  const receipt = await web3.eth.getTransactionReceipt(event.transactionHash);
+  const gasUsed = receipt.gasUsed.toString();
+
+  const tx = await web3.eth.getTransaction(event.transactionHash);
+  const gasPrice = BigInt(tx.gasPrice).toString();
+
   await transactionService.createTransaction({
     contractAddress: event.address,
     transactionHash: event.transactionHash,
@@ -86,6 +106,8 @@ const handleWithdrawEvent = async (
     spender: user,
     blockTimeStamp: blockTimeStamp.toString(),
     synchronize: synchronize.id,
+    gasUsed,
+    gasPrice,
   });
 };
 
@@ -96,6 +118,13 @@ const handleMintNFTEvent = async (
   synchronize
 ) => {
   const { user, tokenId } = returnValues;
+
+  const receipt = await web3.eth.getTransactionReceipt(event.transactionHash);
+  const gasUsed = receipt.gasUsed.toString();
+
+  const tx = await web3.eth.getTransaction(event.transactionHash);
+  const gasPrice = BigInt(tx.gasPrice).toString();
+
   await transactionService.createTransaction({
     contractAddress: event.address,
     transactionHash: event.transactionHash,
@@ -106,6 +135,8 @@ const handleMintNFTEvent = async (
     tokenId: tokenId.toString(),
     blockTimeStamp: blockTimeStamp.toString(),
     synchronize: synchronize.id,
+    gasUsed,
+    gasPrice,
   });
 };
 

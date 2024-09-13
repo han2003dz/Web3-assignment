@@ -10,55 +10,90 @@ const TransactionsHistory = () => {
   const [searchText, setSearchText] = useState("");
   const [searchedColumn, setSearchedColumn] = useState("");
   const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0,
   });
+  const [sorter, setSorter] = useState({});
   const searchInput = useRef(null);
 
-  // Function to fetch data with pagination
-  const fetchData = useCallback(async (page = 1, pageSize = 10) => {
-    setLoading(true);
-    try {
-      const response = await getTransactions({ page, limit: pageSize });
-      console.log("transactions", response);
+  // Function to fetch data with pagination, filters, and sorting
+  const fetchData = useCallback(
+    async (page = 1, pageSize = 10, sorter = {}, filters = {}) => {
+      setLoading(true);
+      try {
+        const sortQuery = sorter.order
+          ? `${sorter.field}:${sorter.order === "ascend" ? "asc" : "desc"}`
+          : undefined;
+        const transactionQuery = {
+          page,
+          limit: pageSize,
+          sortBy: sortQuery,
+          ...filters,
+        };
 
-      if (Array.isArray(response.results)) {
-        setData(response.results);
-        setPagination({
-          current: page,
-          pageSize,
-          total: response.totalResults,
-        });
-      } else {
-        console.error("Expected an array but got:", response.results);
+        const response = await getTransactions(transactionQuery);
+        console.log("transactions", response);
+
+        if (Array.isArray(response.results)) {
+          setData(response.results);
+          setPagination({
+            current: page,
+            pageSize,
+            total: response.totalResults, // Tổng số kết quả từ API
+          });
+        } else {
+          console.error("Expected an array but got:", response.results);
+        }
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   useEffect(() => {
-    fetchData(pagination.current, pagination.pageSize);
-  }, [fetchData, pagination.current, pagination.pageSize]);
+    fetchData(pagination.current, pagination.pageSize, sorter);
+  }, [fetchData, pagination.current, pagination.pageSize, sorter]);
 
-  const handleTableChange = (newPagination) => {
-    fetchData(newPagination.current, newPagination.pageSize);
+  const handleTableChange = (newPagination, filters, newSorter) => {
+    const { current, pageSize } = newPagination;
+
+    console.log("newPagination", newPagination, "newSorter", newSorter);
+
+    // Cập nhật lại pagination và sorter
+    setPagination({
+      current,
+      pageSize,
+      total: pagination.total,
+    });
+
+    setSorter({
+      field: newSorter.field,
+      order: newSorter.order,
+    });
+
+    // Gọi lại API để lấy dữ liệu trang mới với các bộ lọc và sắp xếp mới
+    fetchData(current, pageSize, newSorter, filters);
   };
 
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
     confirm();
     setSearchText(selectedKeys[0]);
     setSearchedColumn(dataIndex);
+    fetchData(pagination.current, pagination.pageSize, sorter, {
+      [dataIndex]: selectedKeys[0],
+    });
   };
 
   const handleReset = (clearFilters) => {
     clearFilters();
     setSearchText("");
+    fetchData(pagination.current, pagination.pageSize, sorter);
   };
 
   const getColumnSearchProps = (dataIndex) => ({
@@ -69,12 +104,7 @@ const TransactionsHistory = () => {
       clearFilters,
       close,
     }) => (
-      <div
-        style={{
-          padding: 8,
-        }}
-        onKeyDown={(e) => e.stopPropagation()}
-      >
+      <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
         <Input
           ref={searchInput}
           placeholder={`Search ${dataIndex}`}
@@ -83,10 +113,7 @@ const TransactionsHistory = () => {
             setSelectedKeys(e.target.value ? [e.target.value] : [])
           }
           onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
-          style={{
-            marginBottom: 8,
-            display: "block",
-          }}
+          style={{ marginBottom: 8, display: "block" }}
         />
         <Space>
           <Button
@@ -94,18 +121,14 @@ const TransactionsHistory = () => {
             onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
             icon={<SearchOutlined />}
             size="small"
-            style={{
-              width: 90,
-            }}
+            style={{ width: 90 }}
           >
             Search
           </Button>
           <Button
             onClick={() => clearFilters && handleReset(clearFilters)}
             size="small"
-            style={{
-              width: 90,
-            }}
+            style={{ width: 90 }}
           >
             Reset
           </Button>
@@ -113,33 +136,21 @@ const TransactionsHistory = () => {
             type="link"
             size="small"
             onClick={() => {
-              confirm({
-                closeDropdown: false,
-              });
+              confirm({ closeDropdown: false });
               setSearchText(selectedKeys[0]);
               setSearchedColumn(dataIndex);
             }}
           >
             Filter
           </Button>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => {
-              close();
-            }}
-          >
-            close
+          <Button type="link" size="small" onClick={() => close()}>
+            Close
           </Button>
         </Space>
       </div>
     ),
     filterIcon: (filtered) => (
-      <SearchOutlined
-        style={{
-          color: filtered ? "#1677ff" : undefined,
-        }}
-      />
+      <SearchOutlined style={{ color: filtered ? "#1677ff" : undefined }} />
     ),
     onFilter: (value, record) =>
       record[dataIndex].toString().toLowerCase().includes(value.toLowerCase()),
@@ -151,10 +162,7 @@ const TransactionsHistory = () => {
     render: (text) =>
       searchedColumn === dataIndex ? (
         <Highlighter
-          highlightStyle={{
-            backgroundColor: "#ffc069",
-            padding: 0,
-          }}
+          highlightStyle={{ backgroundColor: "#ffc069", padding: 0 }}
           searchWords={[searchText]}
           autoEscape
           textToHighlight={text ? text.toString() : ""}
@@ -182,15 +190,15 @@ const TransactionsHistory = () => {
       title: "Block",
       dataIndex: "blockNumber",
       width: "10%",
-      sorter: (a, b) => a.blockNumber - b.blockNumber,
-      ...getColumnSearchProps("transactionHash"),
+      sorter: true,
+      ...getColumnSearchProps("blockNumber"),
     },
     {
       title: "Created At",
       dataIndex: "createdAt",
       key: "createdAt",
       width: "10%",
-      sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+      sorter: true,
       sortDirections: ["descend", "ascend"],
       ...getColumnSearchProps("createdAt"),
       render: (time) => formatDateTime(time),
@@ -201,7 +209,7 @@ const TransactionsHistory = () => {
       key: "spender",
       width: "20%",
       ...getColumnSearchProps("spender"),
-      sorter: (a, b) => a.spender.localeCompare(b.spender),
+      sorter: true,
       sortDirections: ["descend", "ascend"],
       ellipsis: true,
     },
@@ -211,7 +219,7 @@ const TransactionsHistory = () => {
       key: "contractAddress",
       width: "20%",
       ...getColumnSearchProps("contractAddress"),
-      sorter: (a, b) => a.contractAddress.localeCompare(b.contractAddress),
+      sorter: true,
       sortDirections: ["descend", "ascend"],
       ellipsis: true,
     },
@@ -221,16 +229,23 @@ const TransactionsHistory = () => {
       key: "amount",
       width: "10%",
       ...getColumnSearchProps("amount"),
-      sorter: (a, b) => a.amount - b.amount,
+      sorter: true,
       render: (amount) => convertFromWeiToEth(amount),
       ellipsis: true,
     },
     {
-      title: "Txn Fee",
-      dataIndex: "txnFee",
-      key: "txnFee",
+      title: "gasPrice",
+      dataIndex: "gasPrice",
+      key: "gasPrice",
       width: "10%",
-      sorter: (a, b) => a.txnFee - b.txnFee,
+      sorter: true,
+    },
+    {
+      title: "gasUsed",
+      dataIndex: "gasUsed",
+      key: "gasUsed",
+      width: "10%",
+      sorter: true,
     },
   ];
 
@@ -245,6 +260,7 @@ const TransactionsHistory = () => {
         total: pagination.total,
         onChange: handleTableChange,
       }}
+      onChange={handleTableChange}
       rowKey="id"
     />
   );

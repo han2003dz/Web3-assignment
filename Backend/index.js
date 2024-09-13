@@ -37,7 +37,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/v1", router);
 
-startSynchronizeDataFromSmartContract();
+// startSynchronizeDataFromSmartContract();
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);

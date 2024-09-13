@@ -52,4 +52,8 @@ contract MyTokenERC20 is ERC20, Ownable {
         require(balanceOf(address(this)) >= faucetAmount, "Contract does not have enough tokens for faucet");
         _transfer(address(this), user, faucetAmount);
     }
+
+    function mintInterest(uint256 interest, address user) public {
+        _transfer(address(this), user, interest);
+    }
 }

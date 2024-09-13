@@ -5,6 +5,7 @@ import { login, refresh, verify } from "./services/auth";
 import useUserStore from "./store/useUserStore";
 import Web3 from "web3";
 import { jwtDecode } from "jwt-decode";
+import { getCookie } from "./services/cookies";
 
 function App() {
   const { setIsLogin, setUser, user } = useUserStore();
@@ -83,14 +84,19 @@ function App() {
   // useEffect để gọi MetaMask khi khởi tạo
   useEffect(() => {
     initializeMetamask();
-  }, [setUser]); // setUser là dependency
+  }, [setUser]);
 
-  // useEffect để kiểm tra trạng thái đăng nhập và refresh
   useEffect(() => {
-    console.log("OKK");
+    console.log("OKKkkk");
     const onRefresh = async () => {
       try {
         const response = await refresh();
+        const token = getCookie("accessToken");
+        console.log("token", token);
+        if (!token) {
+          setIsLogin(false);
+          handleLogin();
+        }
         setIsLogin(true);
         console.log("response", response);
       } catch (error) {

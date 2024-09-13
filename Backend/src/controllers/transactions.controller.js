@@ -4,8 +4,6 @@ const response = require("../utils/response");
 const getTransactions = async (req, res) => {
   try {
     const result = await transactionService.queryTransactions(req.query);
-    const user = req.user;
-    console.log("user", user);
     res
       .status(httpStatus.OK)
       .json(response(httpStatus.OK, "Successfully", result));

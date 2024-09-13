@@ -47,6 +47,13 @@ const transactionSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    gasUsed: {
+      type: String,
+      default: null,
+    },
+    gasPrice: {
+      type: String,
+    },
     synchronize: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Synchronize",

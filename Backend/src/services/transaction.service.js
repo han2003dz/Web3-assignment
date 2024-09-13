@@ -17,6 +17,8 @@ const createTransaction = async (transactionBody) => {
     date = new Date(),
     blockTimeStamp,
     synchronize,
+    gasUsed,
+    gasPrice,
   } = transactionBody;
 
   return await Transaction.create({
@@ -31,6 +33,8 @@ const createTransaction = async (transactionBody) => {
     date,
     blockTimeStamp,
     synchronize,
+    gasUsed,
+    gasPrice,
   });
 };
 

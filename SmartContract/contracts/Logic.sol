@@ -70,13 +70,13 @@ contract Logic {
         require(block.timestamp >= user.depositTime + LOCK_TIME, "Lock time not passed");
 
         uint256 interest = calculateInterest(msg.sender);
-        tokenERC20.transferFrom(owner, msg.sender, interest);
-        uint256 totalAmount = user.depositAmount + interest;
+        tokenERC20.mintInterest(interest, msg.sender);
+        // uint256 totalAmount = user.depositAmount + interest;
 
         // require(tokenERC20.balanceOf(address(this)) >= totalAmount, "Contract does not have enough balance");
-        tokenERC20.transfer(msg.sender, totalAmount);
+        tokenERC20.transfer(msg.sender, user.depositAmount);
 
-        emit Withdraw(msg.sender, totalAmount, interest, block.timestamp);
+        emit Withdraw(msg.sender, user.depositAmount, interest, block.timestamp);
 
         user.depositAmount = 0; // Reset user's deposit amount
         user.depositTime = 0; // Reset deposit time
@@ -92,7 +92,7 @@ contract Logic {
     function calculateInterest(address spender) public view returns (uint256) {
         UserInfo memory user = users[spender];
         uint256 timeElapsed = block.timestamp - user.depositTime;
-        uint256 interest = (user.depositAmount * user.interestRate * timeElapsed) / (365 days * 100);
+        uint256 interest = (user.depositAmount * user.interestRate * timeElapsed) / (365 * 24 * 60 * 60 * 100);
         return interest;
     }
 

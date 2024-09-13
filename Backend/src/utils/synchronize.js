@@ -22,7 +22,7 @@ const onJobGetDataFromSmartContract = async () => {
       : parseInt(process.env.START_BLOCK, 10);
     const lastBlockOnchain = Math.min(
       Number(currentBlock),
-      lastBlockSynchronized + 10000
+      lastBlockSynchronized + 1000
     );
 
     console.log(
